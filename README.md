@@ -1,6 +1,6 @@
 # 連接 GitHub and Obsidian
 
-這份懶人包帶你在 macOS 的 Codex Desktop 中完成兩件事：
+這份懶人包帶你在 **macOS 或 Windows 的 Codex Desktop** 完成兩件事：
 
 1. 讓 Codex 能透過 Git 與 GitHub CLI 進行 commit 與 push。
 2. 讓 Codex 透過 MCPVault 讀寫你的 Obsidian vault。
@@ -14,9 +14,9 @@
 ## 先備條件
 
 - 已安裝 Codex Desktop。
-- 已有 GitHub 帳號。
+- 已有 GitHub 帳號與網路連線。
 - 已建立 Obsidian vault。
-- 可使用終端機。
+- 可使用 Terminal（macOS）或 PowerShell（Windows）。
 
 > 不要將 GitHub token、密碼或 `.codex/config.toml` 的完整內容放進 repo。
 
@@ -24,7 +24,7 @@
 
 ### 1. 檢查工具
 
-在 Terminal 執行：
+**macOS Terminal**
 
 ```bash
 git --version
@@ -33,13 +33,33 @@ node --version
 npm --version
 ```
 
-如果缺少 GitHub CLI，可用 Homebrew 安裝：
+缺少 GitHub CLI 時：
 
 ```bash
 brew install gh
 ```
 
+**Windows PowerShell**
+
+```powershell
+git --version
+gh --version
+node --version
+npm.cmd --version
+```
+
+缺少 Git 或 GitHub CLI 時：
+
+```powershell
+winget install --id Git.Git --accept-source-agreements --accept-package-agreements
+winget install --id GitHub.cli --accept-source-agreements --accept-package-agreements
+```
+
+安裝後請完全重啟 Codex Desktop，再重新檢查。
+
 ### 2. 登入 GitHub
+
+macOS 與 Windows 都可執行：
 
 ```bash
 gh auth login --web --git-protocol https
@@ -47,6 +67,8 @@ gh auth status
 ```
 
 依照瀏覽器畫面完成授權。成功後，`gh auth status` 應顯示已登入帳號與 `https` Git protocol。
+
+> 若 Codex 內的登入等待逾時，請在可互動的 Terminal 或 PowerShell 執行同一個登入命令，完成瀏覽器授權後再回來驗證。
 
 ### 3. 設定提交者資訊
 
@@ -66,10 +88,24 @@ git config --global user.email "你的 GitHub no-reply email"
 
 ### 4. 建立並推送測試 repo
 
+**macOS Terminal**
+
 ```bash
 mkdir -p ~/Documents/codex-github-test
 cd ~/Documents/codex-github-test
 printf '# Codex GitHub 測試\n' > README.md
+git init
+git add README.md
+git commit -m "建立 Codex GitHub 測試"
+gh repo create codex-github-test --private --source=. --push
+```
+
+**Windows PowerShell**
+
+```powershell
+New-Item -ItemType Directory -Path "$env:USERPROFILE\Documents\codex-github-test" -Force
+Set-Location "$env:USERPROFILE\Documents\codex-github-test"
+"# Codex GitHub 測試" | Set-Content -Encoding UTF8 README.md
 git init
 git add README.md
 git commit -m "建立 Codex GitHub 測試"
@@ -82,30 +118,50 @@ gh repo create codex-github-test --private --source=. --push
 gh repo view codex-github-test --web
 ```
 
-若測試 repo 不再需要，刪除前請確認名稱無誤：
+測試 repo 不再需要時，確認名稱無誤後再刪除。macOS：
 
 ```bash
 gh repo delete codex-github-test --yes
 rm -rf ~/Documents/codex-github-test
 ```
 
+Windows：
+
+```powershell
+gh repo delete codex-github-test --yes
+Remove-Item -LiteralPath "$env:USERPROFILE\Documents\codex-github-test" -Recurse -Force
+```
+
 ## 第二部分：Obsidian MCPVault
 
 ### 1. 找到 vault
 
-你的 vault 是含有 `.obsidian` 資料夾的目錄。Google Drive for desktop 在 macOS 常見路徑如下：
+vault 是含有 `.obsidian` 資料夾的目錄。找到候選資料夾後，請確認那是你實際使用的主要 vault。
 
-```text
-~/Library/CloudStorage/GoogleDrive-你的帳號/My Drive/Obsidian/你的Vault名稱
-```
+| 平台與同步方式 | 常見路徑 |
+| --- | --- |
+| macOS／Google Drive | `~/Library/CloudStorage/GoogleDrive-你的帳號/My Drive/Obsidian/你的Vault名稱` |
+| Windows／OneDrive | `C:\Users\你\OneDrive\文件\你的Vault名稱` |
+| Windows／Google Drive | `G:\我的雲端硬碟\你的Vault名稱` |
+| 任一平台／本機 Documents | 使用者的 Documents 目錄下的 vault 資料夾 |
 
-先確認 `.obsidian` 存在：
+**macOS**
 
 ```bash
 ls -la "/你的/vault/路徑/.obsidian"
 ```
 
+**Windows PowerShell**
+
+```powershell
+Test-Path "C:\你的\vault\路徑\.obsidian"
+```
+
+結果應為 `True`，或能列出 `.obsidian` 的內容。
+
 ### 2. 安裝 MCPVault
+
+**macOS**
 
 若全域 npm 目錄有寫入權限：
 
@@ -113,32 +169,52 @@ ls -la "/你的/vault/路徑/.obsidian"
 npm install -g @bitbonsai/mcpvault
 ```
 
-若遇到 `EACCES`，改安裝到使用者私有目錄：
+若遇到 `EACCES`，安裝到使用者私有目錄：
 
 ```bash
 npm install --prefix ~/.local -g @bitbonsai/mcpvault
 ```
 
-後者的執行檔通常是：
+對應命令通常是 `~/.local/bin/mcpvault`。
+
+**Windows PowerShell**
+
+請使用 `npm.cmd`，避免 PowerShell 的執行原則阻擋 `npm.ps1`：
+
+```powershell
+npm.cmd install -g @bitbonsai/mcpvault
+where.exe mcpvault
+```
+
+常見命令位置為：
 
 ```text
-~/.local/bin/mcpvault
+C:\Users\你\AppData\Roaming\npm\mcpvault.cmd
 ```
 
 ### 3. 先測試 MCPVault
 
-將以下的 vault 路徑換成自己的：
+**macOS**
 
 ```bash
 printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
   | ~/.local/bin/mcpvault "/你的/vault/路徑"
 ```
 
+**Windows PowerShell**
+
+```powershell
+'{"jsonrpc":"2.0","id":1,"method":"tools/list"}' |
+  & "C:\Users\你\AppData\Roaming\npm\mcpvault.cmd" "C:\你的\vault\路徑"
+```
+
 成功時會列出 `read_note`、`write_note`、`search_notes` 等工具。
 
 ### 4. 設定 Codex
 
-先備份設定檔：
+先備份設定檔。
+
+**macOS**
 
 ```bash
 cp ~/.codex/config.toml ~/.codex/config.toml.bak-$(date +%Y%m%d-%H%M%S)
@@ -150,6 +226,23 @@ cp ~/.codex/config.toml ~/.codex/config.toml.bak-$(date +%Y%m%d-%H%M%S)
 [mcp_servers.obsidian]
 command = "/Users/你的帳號/.local/bin/mcpvault"
 args = ["/你的/vault/路徑"]
+startup_timeout_sec = 20
+tool_timeout_sec = 60
+```
+
+**Windows PowerShell**
+
+```powershell
+$config = "$env:USERPROFILE\.codex\config.toml"
+Copy-Item -LiteralPath $config -Destination "$config.bak-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+```
+
+在 `%USERPROFILE%\.codex\config.toml` 加入以下內容。TOML 的 Windows 路徑必須使用雙反斜線：
+
+```toml
+[mcp_servers.obsidian]
+command = "C:\\Users\\你\\AppData\\Roaming\\npm\\mcpvault.cmd"
+args = ["C:\\你的\\vault\\路徑"]
 startup_timeout_sec = 20
 tool_timeout_sec = 60
 ```
@@ -176,8 +269,10 @@ tool_timeout_sec = 60
 | --- | --- |
 | `gh auth status` 顯示未登入 | 執行 `gh auth login --web --git-protocol https`，並在瀏覽器完成授權。 |
 | commit 失敗且要求作者資訊 | 設定 `git config --global user.name` 與 `user.email`。 |
-| `npm install -g` 出現 `EACCES` | 使用 `npm install --prefix ~/.local -g @bitbonsai/mcpvault`。 |
-| 重啟後沒有 Obsidian 工具 | 檢查 `config.toml` 的 command、vault 路徑與 TOML 語法，再完全重啟 Codex。 |
+| macOS 的 `npm install -g` 出現 `EACCES` | 使用 `npm install --prefix ~/.local -g @bitbonsai/mcpvault`。 |
+| Windows 的 `npm.ps1` 被擋 | 改用 `npm.cmd`。 |
+| Windows 找不到 `mcpvault` | 用 `where.exe mcpvault` 或檢查 `%AppData%\npm\mcpvault.cmd`。 |
+| 重啟後沒有 Obsidian 工具 | 檢查 command、vault 路徑與 TOML 語法，再完全重啟 Codex。 |
 | 找不到 vault | 尋找含有 `.obsidian` 的資料夾，並確認雲端檔案已下載到本機。 |
 
 ## 安全提醒
