@@ -1,5 +1,7 @@
 # 連接 GitHub and Obsidian
 
+English GitHub-only setup guide: [INSTALL_GITHUB.md](INSTALL_GITHUB.md)
+
 這份懶人包帶你在 **macOS 或 Windows 的 Codex Desktop** 完成兩件事：
 
 1. 讓 Codex 能透過 Git 與 GitHub CLI 進行 commit 與 push。
